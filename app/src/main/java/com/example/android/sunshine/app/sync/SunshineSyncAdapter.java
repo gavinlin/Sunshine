@@ -31,6 +31,7 @@ import com.example.android.sunshine.app.MainActivity;
 import com.example.android.sunshine.app.R;
 import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.utils.Constant;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -86,24 +87,23 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
         String format = "json";
         String units = "metric";
-        int numDays = 14;
+        int numDays = 5;
 
         try {
             // Construct the URL for the OpenWeatherMap query
             // Possible parameters are avaiable at OWM's forecast API page, at
             // http://openweathermap.org/API#forecast
-            final String FORECAST_BASE_URL =
-                    "http://api.openweathermap.org/data/2.5/forecast/daily?";
-            final String QUERY_PARAM = "q";
+
+            final String QUERY_PARAM = "id";
             final String FORMAT_PARAM = "mode";
             final String UNITS_PARAM = "units";
-            final String DAYS_PARAM = "cnt";
+//            final String DAYS_PARAM = "cnt";
 
-            Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
+            Uri builtUri = Uri.parse(Constant.FORECAST_BASE_URL).buildUpon()
                     .appendQueryParameter(QUERY_PARAM, locationQuery)
                     .appendQueryParameter(FORMAT_PARAM, format)
                     .appendQueryParameter(UNITS_PARAM, units)
-                    .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
+//                    .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
                     .build();
 
             URL url = new URL(builtUri.toString());
@@ -193,9 +193,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
         final String OWM_WIND_DIRECTION = "deg";
 
         // All temperatures are children of the "temp" object.
-        final String OWM_TEMPERATURE = "temp";
-        final String OWM_MAX = "max";
-        final String OWM_MIN = "min";
+        final String OWM_TEMPERATURE = "main";
+        final String OWM_MAX = "temp_max";
+        final String OWM_MIN = "temp_min";
 
         final String OWM_WEATHER = "weather";
         final String OWM_DESCRIPTION = "main";
@@ -252,12 +252,15 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 JSONObject dayForecast = weatherArray.getJSONObject(i);
 
                 // Cheating to convert this to UTC time, which is what we want anyhow
-                dateTime = dayTime.setJulianDay(julianStartDay+i);
+                dateTime = dayTime.setJulianDay(julianStartDay + i);
 
-                pressure = dayForecast.getDouble(OWM_PRESSURE);
-                humidity = dayForecast.getInt(OWM_HUMIDITY);
-                windSpeed = dayForecast.getDouble(OWM_WINDSPEED);
-                windDirection = dayForecast.getDouble(OWM_WIND_DIRECTION);
+                JSONObject mainObject = dayForecast.getJSONObject("main");
+                pressure = mainObject.getDouble(OWM_PRESSURE);
+                humidity = mainObject.getInt(OWM_HUMIDITY);
+
+                JSONObject windObject = dayForecast.getJSONObject("wind");
+                windSpeed = windObject.getDouble(OWM_WINDSPEED);
+                windDirection = windObject.getDouble(OWM_WIND_DIRECTION);
 
                 // Description is in a child array called "weather", which is 1 element long.
                 // That element also contains a weather code.
